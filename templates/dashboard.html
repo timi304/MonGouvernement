@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Tableau de bord</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<nav>
+
+    <h2>Gouvernement</h2>
+
+    <div>
+
+        <a href="/users">Utilisateurs</a>
+        <a href="/news">Journal</a>
+        <a href="/announcements">Annonces</a>
+        <a href="/military">Militaire</a>
+        <a href="/logs">Logs</a>
+        <a href="/logout">Déconnexion</a>
+
+    </div>
+
+</nav>
+
+<div class="container">
+
+    <h1>Bienvenue {{ username }}</h1>
+
+    <h3>{{ role }}</h3>
+
+    <div class="grid">
+
+        <div class="card">
+            <h2>Utilisateurs</h2>
+            <p>{{ stats.users }}</p>
+        </div>
+
+        <div class="card">
+            <h2>Articles</h2>
+            <p>{{ stats.news }}</p>
+        </div>
+
+        <div class="card">
+            <h2>Annonces</h2>
+            <p>{{ stats.announcements }}</p>
+        </div>
+
+        <div class="card">
+            <h2>Ordres</h2>
+            <p>{{ stats.orders }}</p>
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

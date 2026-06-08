@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Utilisateurs</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="container">
+
+    <h1>Gestion des utilisateurs</h1>
+
+    <form action="/add_user" method="POST">
+
+        <input
+            type="text"
+            name="username"
+            placeholder="Nom d'utilisateur"
+            required
+        >
+
+        <input
+            type="password"
+            name="password"
+            placeholder="Mot de passe"
+            required
+        >
+
+        <select name="role">
+
+            <option>Président Militaire</option>
+            <option>Président Financier</option>
+            <option>Chancelier</option>
+            <option>Ministre Affaires Étrangères</option>
+            <option>Ministre Intérieur</option>
+            <option>Ministre Sports</option>
+            <option>Ministre Éducation</option>
+            <option>Général</option>
+            <option>Officier</option>
+            <option>Soldat</option>
+            <option>Journaliste</option>
+            <option>Citoyen</option>
+
+        </select>
+
+        <button type="submit">
+            Créer l'utilisateur
+        </button>
+
+    </form>
+
+    <table>
+
+        <tr>
+            <th>ID</th>
+            <th>Utilisateur</th>
+            <th>Rôle</th>
+            <th>Action</th>
+        </tr>
+
+        {% for u in users %}
+
+        <tr>
+            <td>{{ u.id }}</td>
+            <td>{{ u.username }}</td>
+            <td>{{ u.role }}</td>
+            <td>
+                <a href="/delete_user/{{ u.id }}">
+                    Supprimer
+                </a>
+            </td>
+        </tr>
+
+        {% endfor %}
+
+    </table>
+
+</div>
+
+</body>
+</html>

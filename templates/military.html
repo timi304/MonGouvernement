@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ordres militaires</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="container">
+
+    <h1>Ordres militaires</h1>
+
+    {% for order in orders %}
+
+    <div class="card">
+
+        <h2>{{ order.title }}</h2>
+
+        <p>{{ order.content }}</p>
+
+        <small>
+            Cible : {{ order.target_role }}
+        </small>
+
+    </div>
+
+    {% endfor %}
+
+</div>
+
+</body>
+</html>

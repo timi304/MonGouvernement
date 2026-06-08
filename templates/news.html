@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Journal officiel</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="container">
+
+    <h1>Journal officiel</h1>
+
+    {% for article in articles %}
+
+    <div class="card">
+
+        <h2>{{ article.title }}</h2>
+
+        <p>{{ article.content }}</p>
+
+        <small>
+            {{ article.author }}
+        </small>
+
+    </div>
+
+    {% endfor %}
+
+</div>
+
+</body>
+</html>
