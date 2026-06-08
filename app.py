@@ -6,7 +6,7 @@ from psycopg2.extras import RealDictCursor
 import os
 
 app = Flask(__name__)
-app.secret_key = "Cocacherry12!"
+app.secret_key = os.environ.get("Cocacherry12!")
 
 DATABASE_URL = os.environ.get("https://eanmvqtljimvdmjjeooi.supabase.co/rest/v1/")
 
@@ -391,5 +391,5 @@ def logs():
     return render_template("logs.html", logs=data)
 
 if __name__ == "__main__":
-    init_db()
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
