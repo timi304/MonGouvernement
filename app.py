@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, session, url_for
+from flask import Flask, render_template, request, redirect, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 import psycopg2
@@ -6,21 +6,21 @@ from psycopg2.extras import RealDictCursor
 import os
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("Cocacherry12!")
+app.secret_key = "CHANGE_ME_SUPER_SECRET_KEY"
 
-DATABASE_URL = os.environ.get("https://eanmvqtljimvdmjjeooi.supabase.co/rest/v1/")
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
 def get_db():
     return psycopg2.connect(
         DATABASE_URL,
-        cursor_factory=RealDictCursor
+        cursor_factory=RealDictCursor,
+        sslmode="require"
     )
 
 ROLES = [
     "Président Militaire",
     "Président Financier",
     "Chancelier",
-    "Cybermaitre",
     "Ministre Affaires Étrangères",
     "Ministre Intérieur",
     "Ministre Sports",
@@ -34,7 +34,8 @@ ROLES = [
 
 def log_action(username, action):
     conn = get_db()
-    conn.execute(
+    cur = conn.cursor()
+    cur.execute(
         "INSERT INTO logs(username,action) VALUES(%s,%s)",
         (username, action)
     )
@@ -47,7 +48,7 @@ def init_db():
 
     cur.execute("""
     CREATE TABLE IF NOT EXISTS users(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         username TEXT UNIQUE,
         password_hash TEXT,
         role TEXT,
@@ -57,7 +58,7 @@ def init_db():
 
     cur.execute("""
     CREATE TABLE IF NOT EXISTS news(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         title TEXT,
         content TEXT,
         author TEXT,
@@ -67,7 +68,7 @@ def init_db():
 
     cur.execute("""
     CREATE TABLE IF NOT EXISTS announcements(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         title TEXT,
         content TEXT,
         author TEXT,
@@ -78,7 +79,7 @@ def init_db():
 
     cur.execute("""
     CREATE TABLE IF NOT EXISTS military_orders(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         title TEXT,
         content TEXT,
         author TEXT,
@@ -89,7 +90,7 @@ def init_db():
 
     cur.execute("""
     CREATE TABLE IF NOT EXISTS logs(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         username TEXT,
         action TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -103,10 +104,11 @@ def init_db():
     ]
 
     for username, password, role in defaults:
-        existing = cur.execute(
+        cur.execute(
             "SELECT id FROM users WHERE username=%s",
             (username,)
-        ).fetchone()
+        )
+        existing = cur.fetchone()
 
         if not existing:
             cur.execute(
@@ -144,10 +146,13 @@ def login():
         password = request.form["password"]
 
         conn = get_db()
-        user = conn.execute(
+        cur = conn.cursor()
+
+        cur.execute(
             "SELECT * FROM users WHERE username=%s",
             (username,)
-        ).fetchone()
+        )
+        user = cur.fetchone()
         conn.close()
 
         if user and check_password_hash(user["password_hash"], password):
@@ -172,15 +177,28 @@ def logout():
 @login_required
 def dashboard():
     conn = get_db()
+    cur = conn.cursor()
 
-    stats = {
-        "users": conn.execute("SELECT COUNT(*) c FROM users").fetchone()["c"],
-        "news": conn.execute("SELECT COUNT(*) c FROM news").fetchone()["c"],
-        "announcements": conn.execute("SELECT COUNT(*) c FROM announcements").fetchone()["c"],
-        "orders": conn.execute("SELECT COUNT(*) c FROM military_orders").fetchone()["c"]
-    }
+    cur.execute("SELECT COUNT(*) c FROM users")
+    users = cur.fetchone()["c"]
+
+    cur.execute("SELECT COUNT(*) c FROM news")
+    news = cur.fetchone()["c"]
+
+    cur.execute("SELECT COUNT(*) c FROM announcements")
+    announcements = cur.fetchone()["c"]
+
+    cur.execute("SELECT COUNT(*) c FROM military_orders")
+    orders = cur.fetchone()["c"]
 
     conn.close()
+
+    stats = {
+        "users": users,
+        "news": news,
+        "announcements": announcements,
+        "orders": orders
+    }
 
     return render_template(
         "dashboard.html",
@@ -196,7 +214,9 @@ def users():
         return "Accès refusé"
 
     conn = get_db()
-    users = conn.execute("SELECT * FROM users").fetchall()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM users")
+    users = cur.fetchall()
     conn.close()
 
     return render_template("users.html", users=users)
@@ -212,14 +232,11 @@ def add_user():
     role = request.form["role"]
 
     conn = get_db()
+    cur = conn.cursor()
 
-    conn.execute(
+    cur.execute(
         "INSERT INTO users(username,password_hash,role) VALUES(%s,%s,%s)",
-        (
-            username,
-            generate_password_hash(password),
-            role
-        )
+        (username, generate_password_hash(password), role)
     )
 
     conn.commit()
@@ -235,7 +252,9 @@ def delete_user(user_id):
         return "Accès refusé"
 
     conn = get_db()
-    conn.execute("DELETE FROM users WHERE id=%s", (user_id,))
+    cur = conn.cursor()
+
+    cur.execute("DELETE FROM users WHERE id=%s", (user_id,))
     conn.commit()
     conn.close()
 
@@ -246,9 +265,11 @@ def delete_user(user_id):
 @login_required
 def news():
     conn = get_db()
-    articles = conn.execute(
-        "SELECT * FROM news ORDER BY id DESC"
-    ).fetchall()
+    cur = conn.cursor()
+
+    cur.execute("SELECT * FROM news ORDER BY id DESC")
+    articles = cur.fetchall()
+
     conn.close()
 
     return render_template("news.html", articles=articles)
@@ -260,14 +281,11 @@ def add_news():
         return "Accès refusé"
 
     conn = get_db()
+    cur = conn.cursor()
 
-    conn.execute(
+    cur.execute(
         "INSERT INTO news(title,content,author) VALUES(%s,%s,%s)",
-        (
-            request.form["title"],
-            request.form["content"],
-            session["username"]
-        )
+        (request.form["title"], request.form["content"], session["username"])
     )
 
     conn.commit()
@@ -279,9 +297,11 @@ def add_news():
 @login_required
 def announcements():
     conn = get_db()
-    data = conn.execute(
-        "SELECT * FROM announcements ORDER BY id DESC"
-    ).fetchall()
+    cur = conn.cursor()
+
+    cur.execute("SELECT * FROM announcements ORDER BY id DESC")
+    data = cur.fetchall()
+
     conn.close()
 
     return render_template("announcements.html", announcements=data)
@@ -300,12 +320,12 @@ def add_announcement():
         return "Accès refusé"
 
     conn = get_db()
+    cur = conn.cursor()
 
-    conn.execute(
+    cur.execute(
         """
-        INSERT INTO announcements(
-            title,content,author,visibility
-        ) VALUES(%s,%s,%s,%s)
+        INSERT INTO announcements(title,content,author,visibility)
+        VALUES(%s,%s,%s,%s)
         """,
         (
             request.form["title"],
@@ -334,10 +354,10 @@ def military():
         return "Accès refusé"
 
     conn = get_db()
+    cur = conn.cursor()
 
-    orders = conn.execute(
-        "SELECT * FROM military_orders ORDER BY id DESC"
-    ).fetchall()
+    cur.execute("SELECT * FROM military_orders ORDER BY id DESC")
+    orders = cur.fetchall()
 
     conn.close()
 
@@ -356,12 +376,12 @@ def add_order():
         return "Accès refusé"
 
     conn = get_db()
+    cur = conn.cursor()
 
-    conn.execute(
+    cur.execute(
         """
-        INSERT INTO military_orders(
-            title,content,author,target_role
-        ) VALUES(%s,%s,%s,%s)
+        INSERT INTO military_orders(title,content,author,target_role)
+        VALUES(%s,%s,%s,%s)
         """,
         (
             request.form["title"],
@@ -383,13 +403,15 @@ def logs():
         return "Accès refusé"
 
     conn = get_db()
-    data = conn.execute(
-        "SELECT * FROM logs ORDER BY id DESC LIMIT 500"
-    ).fetchall()
+    cur = conn.cursor()
+
+    cur.execute("SELECT * FROM logs ORDER BY id DESC LIMIT 500")
+    data = cur.fetchall()
+
     conn.close()
 
     return render_template("logs.html", logs=data)
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    init_db()
+    app.run(host="0.0.0.0", port=5000, debug=True)
