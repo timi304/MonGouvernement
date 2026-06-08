@@ -11,6 +11,7 @@ app.secret_key = "Cocacherry12!"
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
 def get_db():
+    print("DATABASE_URL =", DATABASE_URL)
     return psycopg2.connect(
         DATABASE_URL,
         cursor_factory=RealDictCursor,
