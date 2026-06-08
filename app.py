@@ -6,7 +6,7 @@ from psycopg2.extras import RealDictCursor
 import os
 
 app = Flask(__name__)
-app.secret_key = "CHANGE_ME_SUPER_SECRET_KEY"
+app.secret_key = "Cocacherry12!"
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
