@@ -6,9 +6,9 @@ from psycopg2.extras import RealDictCursor
 import os
 
 app = Flask(__name__)
-app.secret_key = "CHANGE_ME_SUPER_SECRET_KEY"
+app.secret_key = "Cocacherry12!"
 
-DATABASE_URL = os.environ.get("DATABASE_URL")
+DATABASE_URL = os.environ.get("https://eanmvqtljimvdmjjeooi.supabase.co/rest/v1/")
 
 def get_db():
     return psycopg2.connect(
@@ -20,6 +20,7 @@ ROLES = [
     "Président Militaire",
     "Président Financier",
     "Chancelier",
+    "Cybermaitre",
     "Ministre Affaires Étrangères",
     "Ministre Intérieur",
     "Ministre Sports",
