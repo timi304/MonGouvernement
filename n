@@ -1,6 +1,0 @@
-git init
-git add .
-git commit -m "Version 2"
-git branch -M main
-git remote add origin https://github.com/timi304/MonGouvernement.git
-git push -u origin main

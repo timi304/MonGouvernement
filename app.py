@@ -1,12 +1,20 @@
 from flask import Flask, render_template, request, redirect, session, url_for
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
-import sqlite3
+import psycopg2
+from psycopg2.extras import RealDictCursor
+import os
 
 app = Flask(__name__)
 app.secret_key = "CHANGE_ME_SUPER_SECRET_KEY"
 
-DATABASE = "database.db"
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+def get_db():
+    return psycopg2.connect(
+        DATABASE_URL,
+        cursor_factory=RealDictCursor
+    )
 
 ROLES = [
     "Président Militaire",
@@ -23,15 +31,10 @@ ROLES = [
     "Citoyen"
 ]
 
-def get_db():
-    conn = sqlite3.connect(DATABASE)
-    conn.row_factory = sqlite3.Row
-    return conn
-
 def log_action(username, action):
     conn = get_db()
     conn.execute(
-        "INSERT INTO logs(username,action) VALUES(?,?)",
+        "INSERT INTO logs(username,action) VALUES(%s,%s)",
         (username, action)
     )
     conn.commit()
@@ -100,13 +103,13 @@ def init_db():
 
     for username, password, role in defaults:
         existing = cur.execute(
-            "SELECT id FROM users WHERE username=?",
+            "SELECT id FROM users WHERE username=%s",
             (username,)
         ).fetchone()
 
         if not existing:
             cur.execute(
-                "INSERT INTO users(username,password_hash,role) VALUES(?,?,?)",
+                "INSERT INTO users(username,password_hash,role) VALUES(%s,%s,%s)",
                 (username, generate_password_hash(password), role)
             )
 
@@ -141,7 +144,7 @@ def login():
 
         conn = get_db()
         user = conn.execute(
-            "SELECT * FROM users WHERE username=?",
+            "SELECT * FROM users WHERE username=%s",
             (username,)
         ).fetchone()
         conn.close()
@@ -210,7 +213,7 @@ def add_user():
     conn = get_db()
 
     conn.execute(
-        "INSERT INTO users(username,password_hash,role) VALUES(?,?,?)",
+        "INSERT INTO users(username,password_hash,role) VALUES(%s,%s,%s)",
         (
             username,
             generate_password_hash(password),
@@ -231,7 +234,7 @@ def delete_user(user_id):
         return "Accès refusé"
 
     conn = get_db()
-    conn.execute("DELETE FROM users WHERE id=?", (user_id,))
+    conn.execute("DELETE FROM users WHERE id=%s", (user_id,))
     conn.commit()
     conn.close()
 
@@ -258,7 +261,7 @@ def add_news():
     conn = get_db()
 
     conn.execute(
-        "INSERT INTO news(title,content,author) VALUES(?,?,?)",
+        "INSERT INTO news(title,content,author) VALUES(%s,%s,%s)",
         (
             request.form["title"],
             request.form["content"],
@@ -301,7 +304,7 @@ def add_announcement():
         """
         INSERT INTO announcements(
             title,content,author,visibility
-        ) VALUES(?,?,?,?)
+        ) VALUES(%s,%s,%s,%s)
         """,
         (
             request.form["title"],
@@ -357,7 +360,7 @@ def add_order():
         """
         INSERT INTO military_orders(
             title,content,author,target_role
-        ) VALUES(?,?,?,?)
+        ) VALUES(%s,%s,%s,%s)
         """,
         (
             request.form["title"],
